@@ -7,8 +7,8 @@ import (
 )
 
 type CivetAES struct {
-	key []byte
-	iv  []byte
+	Key []byte
+	Iv  []byte
 }
 
 func PKCS7Padding(ciphertext []byte, blockSize int) []byte {
@@ -39,12 +39,12 @@ func (CivetAES) AesEncrypt(origData, key []byte) ([]byte, error) {
 
 //AES解密
 func (self CivetAES) AesDecrypt(crypted []byte) ([]byte, error) {
-	block, err := aes.NewCipher(self.key)
+	block, err := aes.NewCipher(self.Key)
 	if err != nil {
 		return nil, err
 	}
 	blockSize := block.BlockSize()
-	blockMode := cipher.NewCBCDecrypter(block, self.key[:blockSize])
+	blockMode := cipher.NewCBCDecrypter(block, self.Key[:blockSize])
 	origData := make([]byte, len(crypted))
 	blockMode.CryptBlocks(origData, crypted)
 	origData = PKCS7UnPadding(origData)

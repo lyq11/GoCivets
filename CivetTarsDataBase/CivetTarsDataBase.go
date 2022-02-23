@@ -106,8 +106,8 @@ func (CD *CivetData) QueryRowsAllWithOutModel(tableName string, Mana *[]*WarpPac
 	return true
 }
 func (CD *CivetData) DeleteRowWithOutModel(tableName string, SearchKey string, SearchValue string) bool {
-	sql := "DELETE FROM " + tableName + " WHERE " + SearchKey + "=" + SearchValue
-	res := CD.Db.Exec(sql)
+	s := "DELETE FROM " + tableName + " WHERE " + SearchKey + "=" + SearchValue
+	res := CD.Db.Exec(s)
 	if res.Error != nil {
 		print(res.Error.Error())
 		return false
@@ -115,21 +115,21 @@ func (CD *CivetData) DeleteRowWithOutModel(tableName string, SearchKey string, S
 		return true
 	}
 }
-func (CD *CivetData) EditRowWithOutModel(tableName string, SearchKey string, SearchValue string, col []Column) bool {
-	sql := ""
+func (CD *CivetData) EditRowWithOutModel(tableName string, SearchKey string, SearchValue string, col []Column) (bool, error) {
+	s := ""
 	for index, value := range col {
 		fmt.Println(index, value.Key, value.Value)
-		sql = sql + fmt.Sprintf("%s=%s", value.Key, value.Value)
+		s = s + fmt.Sprintf("%s=%s", value.Key, value.Value)
 		if index+1 != len(col) {
-			sql = sql + ","
+			s = s + ","
 		}
 	}
-	sql2 := fmt.Sprintf("update %s set %s where "+SearchKey+"="+SearchValue, tableName, sql)
+	sql2 := fmt.Sprintf("update %s set %s where "+SearchKey+"="+SearchValue, tableName, s)
 	res := CD.Db.Exec(sql2)
 	if res.Error != nil {
-		return false
+		return false, res.Error
 	} else {
-		return true
+		return true, nil
 	}
 }
 func (CD *CivetData) CreateRowWithOutModel(tableName string, col []Column) bool {
@@ -164,16 +164,16 @@ func (CD *CivetData) CreateTableByJson(js []byte, model *DBModel, prefix string)
 		fmt.Println(err)
 		return "", err
 	} else {
-		sql := ""
+		s := ""
 		for index, value := range model.Column {
 			fmt.Println(index, value.Name, value.Type)
-			sql = sql + fmt.Sprintf("`%s` %s NOT NULL", value.Name, value.Type)
+			s = s + fmt.Sprintf("`%s` %s NOT NULL", value.Name, value.Type)
 			if index+1 != len(model.Column) {
-				sql = sql + ","
+				s = s + ","
 			}
 		}
-		fmt.Println(sql)
-		CD.Db.Exec(fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s`(%s,PRIMARY KEY ( `id` ))ENGINE=InnoDB DEFAULT CHARSET=utf8;", model.TableName+prefix, sql))
+		fmt.Println(s)
+		CD.Db.Exec(fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s`(%s,PRIMARY KEY ( `id` ))ENGINE=InnoDB DEFAULT CHARSET=utf8;", model.TableName+prefix, s))
 		//CD.CreateTableByName(&EmptyTable{}, model.TableName)
 		return model.TableName + prefix, nil
 	}
@@ -296,11 +296,17 @@ func (CD *CivetData) CreateTableByName(DataBase interface{}, Name string) bool {
 		ck := CD.Db.Migrator().HasTable(DataBase)
 		if ck == true {
 			fmt.Println("存在表")
-			CD.Db.Migrator().RenameTable(DataBase, Name)
+			err := CD.Db.Migrator().RenameTable(DataBase, Name)
+			if err != nil {
+				return false
+			}
 		} else {
 			fmt.Println("不存在表")
 			CD.CreateTable(DataBase)
-			CD.Db.Migrator().RenameTable(DataBase, Name)
+			err := CD.Db.Migrator().RenameTable(DataBase, Name)
+			if err != nil {
+				return false
+			}
 		}
 		return CD.Db.Migrator().HasTable(Name)
 	}

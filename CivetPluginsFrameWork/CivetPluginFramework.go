@@ -32,7 +32,7 @@ func GetIns() *Plugins {
 
 func (p *Plugins) RegPlug(name string, location string) {
 	p.PluginsConfigs = append(p.PluginsConfigs, &PlugConfig{Name: name, Location: location})
-	plug, err := plugin.Open(name + ".so")
+	plug, err := plugin.Open(location + name + ".so")
 	if err != nil {
 		panic(err)
 	} else {
