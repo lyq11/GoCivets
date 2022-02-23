@@ -1,6 +1,7 @@
 package CivetPluginsFrameWork
 
 import (
+	"errors"
 	"fmt"
 	"plugin"
 	"sync"
@@ -47,11 +48,17 @@ func (p *Plugins) BindPlug(IDName string, PluginName string) {
 	}
 
 }
-func (p *Plugins) CallFunc(IDName string, FuncName string) {
-	p2 := p.pluginsMake[p.pluginsBind[IDName]]
-	lookup, err := p2.Lookup("Analyst")
-	if err != nil {
-		panic(err)
+func (p *Plugins) CallFunc(IDName string, FuncName string, arg1 string) (bool, error) {
+	if _, ok := p.pluginsBind[IDName]; ok {
+		p2 := p.pluginsMake[p.pluginsBind[IDName]]
+		lookup, err := p2.Lookup(FuncName)
+		if err != nil {
+			panic(err)
+		}
+		lookup.(func(id string, df string))(FuncName, arg1)
+		return true, nil
+	} else {
+		fmt.Println("产品", IDName, "不存在注册的插件")
+		return false, errors.New(IDName + "不存在注册的插件")
 	}
-	lookup.(func(id string, df string))(FuncName, FuncName)
 }
